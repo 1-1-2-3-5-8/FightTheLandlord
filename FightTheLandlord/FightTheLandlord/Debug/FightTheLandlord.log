@@ -1,5 +1,0 @@
-﻿  AI.cpp
-e:\vs_programme\repos\fightthelandlord\fightthelandlord\general_class.h(24): warning C4018: “<=”: 有符号/无符号不匹配
-e:\vs_programme\repos\fightthelandlord\fightthelandlord\general_class.h(41): warning C4018: “<”: 有符号/无符号不匹配
-e:\vs_programme\repos\fightthelandlord\fightthelandlord\general_class.h(78): warning C4018: “<”: 有符号/无符号不匹配
-  FightTheLandlord.vcxproj -> E:\VS_programme\repos\FightTheLandlord\Debug\FightTheLandlord.exe
