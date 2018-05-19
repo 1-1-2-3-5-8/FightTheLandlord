@@ -565,34 +565,6 @@ public:
 };
 	/*======================================*/
 /*===================AI相关类实现===================*/
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include "general_class.h"
-using namespace std;
-
-/*======================================
-没有0
-1 过牌
-2 单张
-3 对子
-4 三个
-5 纯炸
-6 三带一
-7 三带一对
-8-19 顺子（5张-12张）
-20-27 联对（3对-10对）
-28-32 飞机（2-6连）
-33-36 连炸（2-5连）
-37 四带单张
-38 四带对子
-39-42 飞机带单张（2-5连）
-43-45 飞机带对子（2-4连）
-46-48 连炸带单张（2-4连）
-49&50 连炸带对子（2|3连）
-51 王炸
-======================================*/
-
 bool cmp_for_comb(const card_type& a, const card_type& b)
 {
 	//非连牌先按重数从少到多再按大小从小到大
@@ -678,25 +650,25 @@ void ai::spare()
 {
 	oneposs_spare copy_res;
 	//把大小王提出
-	if (hand_card.card[13] && hand_card.card[14])//有王炸
+	if (card[13] && card[14])//有王炸
 	{
 		copy_res.met.push_back(card_type(4, 14, 1, 0));
 		copy_res.out_time++;
 	}
-	else if (hand_card.card[13])
+	else if (card[13])
 	{
 		copy_res.met.push_back(card_type(1, 13, 1, 0));//只有小王
 		copy_res.out_time++;
 	}
-	else if (hand_card.card[14])
+	else if (card[14])
 	{
 		copy_res.met.push_back(card_type(1, 14, 1, 0));//只有大王
 		copy_res.out_time++;
 	}
 	//提小2
-	if (hand_card.card[12])
+	if (card[12])
 	{
-		copy_res.met.push_back(card_type(hand_card.card[12], 12, 1, 0));
+		copy_res.met.push_back(card_type(card[12], 12, 1, 0));
 		copy_res.out_time++;
 	}
 	//上面这些牌名在以后拆牌过程都不会考虑到，所以不必修改余牌量
@@ -704,15 +676,15 @@ void ai::spare()
 	//提出炸弹
 	for (i = 0; i < 12; i++)
 	{
-		if (hand_card.card[i] == 4)
+		if (card[i] == 4)
 		{
 			copy_res.met.push_back(card_type(4, i, 1, 0));
 			copy_res.out_time++;
-			hand_card.card[i] = 0;
+			card[i] = 0;
 		}
 	}
 	//以上是所有拆牌方案都遵循的
-	const vector<int> remain_card(hand_card.card, hand_card.card + 12);
+	const vector<int> remain_card(card, card + 12);
 	//不会再有大于A的牌了，所以实际上只要考虑前12种牌
 	int mini = 0;
 	//找到在上面拆牌方案执行完以后，剩下的最小牌
@@ -811,16 +783,10 @@ void ai::dfs(int start, const oneposs_spare& now, const vector<int>& remain)
 	}
 }
 
-/*======================================
-待解决的问题：
-1、同手数的牌出哪种？
-2、出炸弹条件的进一步细化
-3、更大手数方案接牌与过牌方案权衡参数的调整
-4、一种出牌方案里先出哪手牌？
-5、没有对子时需要拆对子来接三带一吗？（可能可以归为3的一种情况）
-可以解决的问题：
-1、出牌的时候会把要带的牌出掉
-======================================*/
+
+/*===================决策的主要修改部分--begin===================*/
+
+
 vector<int> ai::output(const card_type& pr)
 {
 	vector<int> res;
@@ -1102,6 +1068,10 @@ vector<int> ai::output(const card_type& pr)
 		}
 	}
 }
+
+
+/*===================决策的主要修改部分--end===================*/
+
 
 void oneposs_spare::combine(const card_type& pre)
 {
