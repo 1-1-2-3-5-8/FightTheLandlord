@@ -58,7 +58,16 @@ bool cmp_for_out(const card_type& a, const card_type& b)
 {
 	//非连牌还是先按重数从少到多
 	if (a.join == 1 && b.join == 1)
+	{
+		//把三带提前
+		if (a.repeat == 3 && b.repeat == 3)
+			return a.max < b.max;
+		if (a.repeat == 3)
+			return 1;
+		if (b.repeat == 3)
+			return 1;
 		return a.repeat < b.repeat || (a.repeat == b.repeat&&a.max < b.max);
+	}
 	else
 	{
 		//这次先排完连牌再排散牌
@@ -66,10 +75,10 @@ bool cmp_for_out(const card_type& a, const card_type& b)
 			return 0;
 		if (b.join == 1)
 			return 1;
-		//连牌还是先看重数，从少到多
-		if (a.repeat < b.repeat)
-			return 1;
+		//连牌还是先看重数，从多到少
 		if (a.repeat > b.repeat)
+			return 1;
+		if (a.repeat < b.repeat)
 			return 0;
 		//现在重数相同的连牌按最小牌从小到大排
 		return a.max - a.join < b.max - b.join;
@@ -328,6 +337,8 @@ void ai::dfs(int start, const oneposs_spare& now, const vector<int>& remain)
 3、更大手数方案接牌与过牌方案权衡参数的调整
 4、一种出牌方案里先出哪手牌？
 5、没有对子时需要拆对子来接三带一吗？（可能可以归为3的一种情况）
+可以解决的问题：
+1、出牌的时候会把要带的牌出掉
 ======================================*/
 vector<int> ai::output(const out_card& pre)
 {
@@ -343,6 +354,7 @@ vector<int> ai::output(const out_card& pre)
 		vector<card_type>& chosen = result[0].met;//选择手数最少的拆牌方案
 		sort(chosen.begin(), chosen.end(), cmp_for_out);
 		int stop;//连牌终止的地方，接下去都是单牌
+		//如果要出连牌就会在这个循环里返回
 		for (i = 0; i < chosen.size(); i++)
 		{
 			if (chosen[i].join > 1 && chosen[i].max - chosen[i].join + 1 < 4)//最小张小于7的连牌都要出掉！
@@ -381,12 +393,71 @@ vector<int> ai::output(const out_card& pre)
 		if (i >= chosen.size())//只剩连牌了
 			stop = i;
 		int mini = 20, mini_ord = 100;
+		//找出单张和对子
+		vector<card_type*> one, two;
+		for (int j = 0; j < chosen.size(); j++)
+		{
+			if (chosen[j].repeat == 1 && chosen[j].join == 1 
+				&& chosen[j].max < 11)//只考虑小于A的，这些才会去与三带或飞机匹配
+				one.push_back(&chosen[j]);
+			else if (chosen[j].repeat == 2 && chosen[j].join == 1
+				&& chosen[j].max < 11)//同上
+				two.push_back(&chosen[j]);
+		}
+		vector<card_type*>::iterator one_ite = one.begin(), two_ite = two.begin();
+		//找到和三带或飞机匹配好的单张和对子
+		for (int j = 0; j < chosen.size(); j++)
+		{
+			if (chosen[i].repeat == 3)
+			{
+				if (chosen[i].carry == 1)
+				{
+					for (int k = 0; k < chosen[i].join; k++)
+						one_ite++;
+				}
+				else if (chosen[i].carry == 2)
+				{
+					for (int k = 0; k < chosen[i].join; k++)
+						two_ite++;
+				}
+			}
+		}
 		for (int i = stop; i < chosen.size(); i++)
 		{
-			if (chosen[i].max < mini)
+			if (one_ite != one.end() && two_ite != two.end())//都没匹配完
 			{
-				mini = chosen[i].max;//找到最小的单牌（指非连牌）
-				mini_ord = i;
+				if (chosen[i].max < mini)//这种情况下可以出最小的单牌
+				{
+					mini = chosen[i].max;//找到最小的单牌（指非连牌）
+					mini_ord = i;
+				}
+			}
+			else if (two_ite != two.end())//对子还没匹配完，那么单张一定已经匹配完了
+			{
+				if (chosen[i].repeat != 1//不能再找单张的牌了！
+					&& chosen[i].max < mini)
+				{
+					mini = chosen[i].max;
+					mini_ord = i;
+				}
+			}
+			else if (one_ite != one.end())//对子已经匹配完但单张还没匹配完
+			{
+				if (chosen[i].repeat != 2 && chosen[i].max < mini)
+				{
+					mini = chosen[i].max;
+					mini_ord = i;
+				}
+			}
+			//剩下只有单张和对子都匹配完的情形了
+			else//if (one_ite == one.end() && two_ite == two.end())
+			{
+				//不可能再有重数小于等于2的单牌未匹配了
+				if (chosen[i].repeat > 2 && chosen[i].max < mini)
+				{
+					mini = chosen[i].max;
+					mini_ord = i;
+				}
 			}
 		}
 		if (mini_ord < 100 && chosen[mini_ord].repeat < 4//如果还有单牌并且不是炸弹
