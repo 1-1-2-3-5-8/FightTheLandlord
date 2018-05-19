@@ -789,7 +789,7 @@ vector<int> ai::output(const card_type& pr)
 		int stop;//连牌终止的地方，接下去都是单牌
 		for (i = 0; i < chosen.size(); i++)
 		{
-			if (chosen[i].join > 1 && chosen[i].max - chosen[i].join + 1 < 2)//最小张小于5的连牌
+			if (chosen[i].join > 1 && chosen[i].max - chosen[i].join + 1 < 4)//最小张小于7的连牌都要出掉
 			{
 				int cnt = chosen[i].max;
 				for (int j = 1; j <= chosen[i].join; j++)
@@ -928,9 +928,9 @@ vector<int> ai::output(const card_type& pr)
 					else
 					{
 						if (now.met[j].max <= 7)
-							val = -2;
+							val = -5;
 						else
-							val = -3;
+							val = -7;
 					}
 					break;
 				}
@@ -948,7 +948,7 @@ vector<int> ai::output(const card_type& pr)
 					}
 					else if (now.out_time <= 2)//炸完再出一手牌就能出完
 					{
-						val = -4;
+						val = -10;
 						break;
 					}
 				}
