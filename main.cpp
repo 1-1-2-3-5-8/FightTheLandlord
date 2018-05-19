@@ -116,8 +116,27 @@ void play()
 			player_turn(lord);
 			break;
 		case 1:
-			printf("Farmer 1's turn:");
-			player_turn(farmer1);
+			printf("Farmer 1's turn:\n");
+			
+			{
+				printf("Farmer 1's output:");
+				ai AI(farmer1);
+				out = AI.output(pre);//传出AI出牌策略
+				if (out.empty())
+					printf("Pass\n");
+				else
+				{
+					//输出AI出牌
+					for (int i = 0; i < out.size(); i++)
+						cout << turn_back(out[i]) << " ";
+					cout << endl;
+				}
+				int level = -1;//记录出的牌的等级（越高表示出的牌在同牌型里越大，非法牌型与过牌为-1）
+				//将AI要出的牌从手牌中删除，然后将出牌放进出牌历史中，如果非过牌则更新pre
+				int type = valid_out(out, pre, farmer1, level);
+					history.push_back(new out_card(out, type, level));
+			}
+
 			break;
 		case 2:
 			printf("Farmer 2's turn:");
