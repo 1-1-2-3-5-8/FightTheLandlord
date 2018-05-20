@@ -666,12 +666,6 @@ void ai::spare()
 		copy_res.met.push_back(card_type(1, 14, 1, 0));//只有大王
 		copy_res.out_time++;
 	}
-	//提小2
-	if (card[12])
-	{
-		copy_res.met.push_back(card_type(card[12], 12, 1, 0));
-		copy_res.out_time++;
-	}
 	//上面这些牌名在以后拆牌过程都不会考虑到，所以不必修改余牌量
 	int i;
 	//提出炸弹
@@ -685,17 +679,49 @@ void ai::spare()
 		}
 	}
 	//以上是所有拆牌方案都遵循的
-	const vector<int> remain_card(card, card + 12);
-	//不会再有大于A的牌了，所以实际上只要考虑前12种牌
-	int mini = 0;
-	//找到在上面拆牌方案执行完以后，剩下的最小牌
-	while (mini < 12 && remain_card[mini] == 0)
-		mini++;
-	//没有剩下牌了
-	if (mini >= 12)
-		result.push_back(copy_res);
+	//小2如果没有那当然是最简单的
+	if (card[12] == 0)
+	{
+		const vector<int> remain_card(card, card + 12);
+		//不会再有大于A的牌了，所以实际上只要考虑前12种牌
+		int mini = 0;
+		//找到在上面拆牌方案执行完以后，剩下的最小牌
+		while (mini < 12 && remain_card[mini] == 0)
+			mini++;
+		//没有剩下牌了
+		if (mini >= 12)
+			result.push_back(copy_res);
+		else
+			dfs(mini, copy_res, remain_card);
+	}
+	//有小2的话小2也得拆啊！
 	else
-		dfs(mini, copy_res, remain_card);
+	{
+		for (int i = 0; i <= card[12] / 2; i++)
+		{
+			oneposs_spare res(copy_res);
+			int j = card[12] - i;//j一定不为0
+			if (i != 0)
+			{
+				res.met.push_back(card_type(i, 12, 1, 0));
+				res.out_time++;
+			}
+			res.met.push_back(card_type(j, 12, 1, 0));
+			res.out_time++;
+			//又要重复一遍上面的过程了...
+			const vector<int> remain_card(card, card + 12);
+			//不会再有大于A的牌了，所以实际上只要考虑前12种牌
+			int mini = 0;
+			//找到在上面拆牌方案执行完以后，剩下的最小牌
+			while (mini < 12 && remain_card[mini] == 0)
+				mini++;
+			//没有剩下牌了
+			if (mini >= 12)
+				result.push_back(res);
+			else
+				dfs(mini, res, remain_card);
+		}
+	}
 }
 
 void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>& remain)
