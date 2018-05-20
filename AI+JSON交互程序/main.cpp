@@ -561,6 +561,7 @@ public:
 	}
 	void spare();//手牌拆牌
 	void dfs(int, const oneposs_spare&, const vector<int>&);//递归找连牌
+	void dfs_for_nonjoin(int, const oneposs_spare&, const vector<int>&);//拆单牌
 	vector<int> output(const card_type&);//决定要出的牌
 };
 	/*======================================*/
@@ -697,22 +698,45 @@ void ai::spare()
 		dfs(mini, copy_res, remain_card);
 }
 
+void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>& remain)
+{
+	oneposs_spare res(now);
+	if (start >= 12)
+	{
+		res.out_time = res.met.size();
+		result.push_back(res);
+	}
+	for (int i = start; i < 12; i++)
+	{
+		if (remain[i] != 0)
+		{
+			res.met.push_back(card_type(remain[i], i, 1, 0));
+			dfs_for_nonjoin(start + 1, res, remain);
+			//把对子拆成两个单张的出法
+			if (remain[i] == 2)
+			{
+				res.met.push_back(card_type(1, i, 1, 0));
+				res.met.push_back(card_type(1, i, 1, 0));
+				dfs_for_nonjoin(start + 1, res, remain);
+			}
+			else if (remain[i] == 3)
+			{
+				res.met.push_back(card_type(1, i, 1, 0));
+				res.met.push_back(card_type(2, i, 1, 0));
+				dfs_for_nonjoin(start + 1, res, remain);
+			}
+			break;
+		}
+	}
+}
+
 //可能会产生重复方案，但不会影响结果，现有改动，改动后情况尚未测验
+//一定要有把对子拆成单张出的方案，否则无法应对托管模式的单张出法！
 //以start起始拆出一手连牌或将start作为单牌，每次递归start严格单调递增
 void ai::dfs(int start, const oneposs_spare& now, const vector<int>& remain)
 {
 	if (start >= 12)//连牌拆完
-	{
-		oneposs_spare res(now);
-		for (int i = 0; i < 12; i++)
-		{
-			//其他牌都作为散牌处理
-			if (remain[i] != 0)
-				res.met.push_back(card_type(remain[i], i, 1, 0));
-		}
-		res.out_time = res.met.size();
-		result.push_back(res);
-	}
+		dfs_for_nonjoin(0, now, remain);
 	else
 	{
 		oneposs_spare res(now);

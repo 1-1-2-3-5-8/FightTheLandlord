@@ -148,5 +148,6 @@ public:
 	ai(const card_in_hand& _cd) :hand_card(_cd) {}
 	void spare();//手牌拆牌
 	void dfs(int, const oneposs_spare&, const vector<int>&);//递归找连牌
+	void dfs_for_nonjoin(int, const oneposs_spare&, const vector<int>&);//拆单牌
 	vector<int> output(const out_card&);//决定要出的牌
 };
