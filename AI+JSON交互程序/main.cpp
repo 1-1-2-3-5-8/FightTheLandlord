@@ -708,22 +708,32 @@ void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>&
 	}
 	else
 	{
-		if (remain[start] != 0)
+		int i;
+		for (i = start; i < 12; i++)
 		{
-			res.met.push_back(card_type(remain[start], start, 1, 0));
-			//把对子拆成两个单张的出法
-			if (remain[start] == 2)
+			if (remain[i] != 0)
 			{
-				res.met.push_back(card_type(1, start, 1, 0));
-				res.met.push_back(card_type(1, start, 1, 0));
-			}
-			else if (remain[start] == 3)
-			{
-				res.met.push_back(card_type(1, start, 1, 0));
-				res.met.push_back(card_type(2, start, 1, 0));
+				res.met.push_back(card_type(remain[i], i, 1, 0));
+				dfs_for_nonjoin(i + 1, res, remain);
+				//把对子拆成两个单张的出法
+				if (remain[i] == 2)
+				{
+					res.met.push_back(card_type(1, i, 1, 0));
+					res.met.push_back(card_type(1, i, 1, 0));
+					dfs_for_nonjoin(i + 1, res, remain);
+				}
+				else if (remain[i] == 3)
+				{
+					res.met.push_back(card_type(1, i, 1, 0));
+					res.met.push_back(card_type(2, i, 1, 0));
+					dfs_for_nonjoin(i + 1, res, remain);
+				}
+				break;
 			}
 		}
-		dfs_for_nonjoin(start + 1, res, remain);
+		//没有更大的单牌剩下
+		if (i == 12)
+			dfs_for_nonjoin(12, res, remain);
 	}
 }
 
@@ -1017,16 +1027,16 @@ vector<int> ai::output(const card_type& pr)
 					if (now.met[j].join == 1)
 					{
 						if (now.met[j].max <= 7)
-							val = -1;
-						else
 							val = -2;
+						else
+							val = -4;
 					}
 					else
 					{
 						if (now.met[j].max <= 7)
-							val = -6;
-						else
 							val = -8;
+						else
+							val = -10;
 					}
 					break;
 				}
@@ -1039,12 +1049,12 @@ vector<int> ai::output(const card_type& pr)
 					}
 					else if (pr.join > 1)//连牌也炸
 					{
-						val = -3;
+						val = -2;
 						break;
 					}
 					else if (now.out_time <= 2)//炸完再出一手牌就能出完
 					{
-						val = -10;
+						val = -15;
 						break;
 					}
 				}
