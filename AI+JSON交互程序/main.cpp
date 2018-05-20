@@ -901,7 +901,8 @@ vector<int> ai::output(const card_type& pr)
 		}
 		for (int i = stop; i < chosen.size(); i++)
 		{
-			if (one_ite != one.end() && two_ite != two.end())//都没匹配完
+			if ((one.empty() || one_ite != one.end())
+				&& (two.empty() || two_ite != two.end()))//都没有要匹配或者都没匹配完
 			{
 				if (chosen[i].max < mini)//这种情况下可以出最小的单牌
 				{
@@ -909,7 +910,7 @@ vector<int> ai::output(const card_type& pr)
 					mini_ord = i;
 				}
 			}
-			else if (two_ite != two.end())//对子还没匹配完，那么单张一定已经匹配完了
+			else if (two.empty() || two_ite != two.end())//对子还没匹配完或者没有要匹配的，那么单张一定已经匹配完了
 			{
 				if (chosen[i].repeat != 1//不能再找单张的牌了！
 					&& chosen[i].max < mini)
@@ -918,7 +919,7 @@ vector<int> ai::output(const card_type& pr)
 					mini_ord = i;
 				}
 			}
-			else if (one_ite != one.end())//对子已经匹配完但单张还没匹配完
+			else if (one.empty() || one_ite != one.end())//对子已经匹配完但单张还没匹配完或没有要匹配的
 			{
 				if (chosen[i].repeat != 2 && chosen[i].max < mini)
 				{
@@ -927,7 +928,7 @@ vector<int> ai::output(const card_type& pr)
 				}
 			}
 			//剩下只有单张和对子都匹配完的情形了
-			else//if (one_ite == one.end() && two_ite == two.end())
+			else//if (!one.empty() && one_ite == one.end() && !two.empty() && two_ite == two.end())
 			{
 				//不可能再有重数小于等于2的单牌未匹配了
 				if (chosen[i].repeat > 2 && chosen[i].max < mini)
