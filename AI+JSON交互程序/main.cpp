@@ -706,27 +706,24 @@ void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>&
 		res.out_time = res.met.size();
 		result.push_back(res);
 	}
-	for (int i = start; i < 12; i++)
+	else
 	{
-		if (remain[i] != 0)
+		if (remain[start] != 0)
 		{
-			res.met.push_back(card_type(remain[i], i, 1, 0));
-			dfs_for_nonjoin(start + 1, res, remain);
+			res.met.push_back(card_type(remain[start], start, 1, 0));
 			//把对子拆成两个单张的出法
-			if (remain[i] == 2)
+			if (remain[start] == 2)
 			{
-				res.met.push_back(card_type(1, i, 1, 0));
-				res.met.push_back(card_type(1, i, 1, 0));
-				dfs_for_nonjoin(start + 1, res, remain);
+				res.met.push_back(card_type(1, start, 1, 0));
+				res.met.push_back(card_type(1, start, 1, 0));
 			}
-			else if (remain[i] == 3)
+			else if (remain[start] == 3)
 			{
-				res.met.push_back(card_type(1, i, 1, 0));
-				res.met.push_back(card_type(2, i, 1, 0));
-				dfs_for_nonjoin(start + 1, res, remain);
+				res.met.push_back(card_type(1, start, 1, 0));
+				res.met.push_back(card_type(2, start, 1, 0));
 			}
-			break;
 		}
+		dfs_for_nonjoin(start + 1, res, remain);
 	}
 }
 
@@ -1008,10 +1005,12 @@ vector<int> ai::output(const card_type& pr)
 		for (int i = 0; i < result.size(); i++)
 		{
 			oneposs_spare& now = result[i];
+			sort(now.met.begin(), now.met.end(), cmp_for_out);//排序，把连牌提前
 			int val = 0;
 			int j;
 			for (j = 0; j < now.met.size(); j++)
 			{
+				//能接先接，排序后炸弹在最后，所以不能接才炸
 				if (now.met[j].repeat == pr.repeat&&now.met[j].join == pr.join
 					&&now.met[j].carry == pr.carry&&now.met[j].max > pr.max)
 				{
@@ -1025,9 +1024,9 @@ vector<int> ai::output(const card_type& pr)
 					else
 					{
 						if (now.met[j].max <= 7)
-							val = -5;
+							val = -6;
 						else
-							val = -7;
+							val = -8;
 					}
 					break;
 				}
@@ -1040,7 +1039,7 @@ vector<int> ai::output(const card_type& pr)
 					}
 					else if (pr.join > 1)//连牌也炸
 					{
-						val = -4;
+						val = -3;
 						break;
 					}
 					else if (now.out_time <= 2)//炸完再出一手牌就能出完
@@ -1458,6 +1457,13 @@ card_type::card_type(const CardCombo& c)
 vector<Card> turn(const vector<int>& out, const set<Card>& cards)
 {
 	vector<Card> res;
+	//出王炸
+	if (out.size() == 4 && out[0] == 14)
+	{
+		res.push_back(52);
+		res.push_back(53);
+		return res;
+	}
 	vector<Card> hand_card[15];
 	for (set<Card>::iterator iter = cards.begin(); iter != cards.end(); iter++)
 	{

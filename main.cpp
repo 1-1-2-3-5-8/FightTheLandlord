@@ -122,6 +122,12 @@ void play()
 				printf("Farmer 1's output:");
 				ai AI(farmer1);
 				out = AI.output(pre);//传出AI出牌策略
+				if (out.size() == 4 && out[0] == 14)//出王炸需要额外转换
+				{
+					out.clear();
+					out.push_back(13);
+					out.push_back(14);
+				}
 				if (out.empty())
 					printf("Pass\n");
 				else
