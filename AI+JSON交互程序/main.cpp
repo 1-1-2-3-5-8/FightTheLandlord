@@ -885,16 +885,16 @@ vector<int> ai::output(const card_type& pr)
 		//找到和三带或飞机匹配好的单张和对子
 		for (int j = 0; j < chosen.size(); j++)
 		{
-			if (chosen[i].repeat == 3)
+			if (chosen[j].repeat == 3)
 			{
-				if (chosen[i].carry == 1)
+				if (chosen[j].carry == 1)
 				{
-					for (int k = 0; k < chosen[i].join; k++)
+					for (int k = 0; k < chosen[j].join; k++)
 						one_ite++;
 				}
-				else if (chosen[i].carry == 2)
+				else if (chosen[j].carry == 2)
 				{
-					for (int k = 0; k < chosen[i].join; k++)
+					for (int k = 0; k < chosen[j].join; k++)
 						two_ite++;
 				}
 			}
