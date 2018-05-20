@@ -65,7 +65,7 @@ bool cmp_for_out(const card_type& a, const card_type& b)
 		if (a.repeat == 3)
 			return 1;
 		if (b.repeat == 3)
-			return 1;
+			return 0;
 		return a.repeat < b.repeat || (a.repeat == b.repeat&&a.max < b.max);
 	}
 	else
