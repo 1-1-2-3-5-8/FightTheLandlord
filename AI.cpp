@@ -290,12 +290,14 @@ void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>&
 				//把对子拆成两个单张的出法
 				if (remain[i] == 2)
 				{
+					res.met.pop_back();
 					res.met.push_back(card_type(1, i, 1, 0));
 					res.met.push_back(card_type(1, i, 1, 0));
 					dfs_for_nonjoin(i + 1, res, remain);
 				}
 				else if (remain[i] == 3)
 				{
+					res.met.pop_back();
 					res.met.push_back(card_type(1, i, 1, 0));
 					res.met.push_back(card_type(2, i, 1, 0));
 					dfs_for_nonjoin(i + 1, res, remain);
@@ -393,6 +395,10 @@ void ai::dfs(int start, const oneposs_spare& now, const vector<int>& remain)
 3、更大手数方案接牌与过牌方案权衡参数的调整
 4、一种出牌方案里先出哪手牌？
 5、没有对子时需要拆对子来接三带一吗？（可能可以归为3的一种情况）
+应该可以解决但暂未解决的问题：
+1、把一手牌拆成两手可能会导致飞机带上同样的牌，造成违规出牌
+2、决策错误问题的根源（用不属于自己的牌接三带一，有可能是接口的问题）
+3、空炸
 可以解决的问题：
 1、出牌的时候会把要带的牌出掉
 ======================================*/
@@ -554,7 +560,7 @@ vector<int> ai::output(const out_card& pre)
 					//找到所带牌型的最小牌
 					for (j = 1; j < chosen.size(); j++)//从第二手牌开始找带牌
 					{
-						if (chosen[j].join == 1 && chosen[j].repeat == chosen[i].carry)
+						if (chosen[j].join == 1 && chosen[j].repeat == chosen[0].carry)
 							break;
 					}
 					for (int k = 1; k <= chosen[0].join; k++)

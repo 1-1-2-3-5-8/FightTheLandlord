@@ -744,12 +744,14 @@ void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>&
 				//把对子拆成两个单张的出法
 				if (remain[i] == 2)
 				{
+					res.met.pop_back();
 					res.met.push_back(card_type(1, i, 1, 0));
 					res.met.push_back(card_type(1, i, 1, 0));
 					dfs_for_nonjoin(i + 1, res, remain);
 				}
 				else if (remain[i] == 3)
 				{
+					res.met.pop_back();
 					res.met.push_back(card_type(1, i, 1, 0));
 					res.met.push_back(card_type(2, i, 1, 0));
 					dfs_for_nonjoin(i + 1, res, remain);
@@ -1001,7 +1003,7 @@ vector<int> ai::output(const card_type& pr)
 					//找到所带牌型的最小牌
 					for (j = 1; j < chosen.size(); j++)//从第二手牌开始找带牌
 					{
-						if (chosen[j].join == 1 && chosen[j].repeat == chosen[i].carry)
+						if (chosen[j].join == 1 && chosen[j].repeat == chosen[0].carry)
 							break;
 					}
 					for (int k = 1; k <= chosen[0].join; k++)
