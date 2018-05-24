@@ -523,7 +523,7 @@ struct card_type
 	card_type() {}
 	card_type(int _r, int _m, int _j, int _c) :repeat(_r), max(_m), join(_j), carry(_c) {}
 	card_type(const CardCombo&);//接口
-	//组三带之前排序用这个
+								//组三带之前排序用这个
 	friend bool cmp_for_comb(const card_type& a, const card_type& b);
 	//先手出牌前排序
 	friend bool cmp_for_out(const card_type&, const card_type&);
@@ -564,7 +564,7 @@ public:
 	void dfs_for_nonjoin(int, const oneposs_spare&, const vector<int>&);//拆单牌
 	vector<int> output(const card_type&);//决定要出的牌
 };
-	/*======================================*/
+/*======================================*/
 /*===================AI相关类实现===================*/
 bool cmp_for_comb(const card_type& a, const card_type& b)
 {
@@ -932,7 +932,8 @@ vector<int> ai::output(const card_type& pr)
 			if ((one.empty() || one_ite != one.end())
 				&& (two.empty() || two_ite != two.end()))//都没有要匹配或者都没匹配完
 			{
-				if (chosen[i].max < mini)//这种情况下可以出最小的单牌
+				if (chosen[i].repeat < 4//先手不出炸弹
+					&& chosen[i].max < mini)//这种情况下可以出最小的（非炸弹）单牌
 				{
 					mini = chosen[i].max;//找到最小的单牌（指非连牌）
 					mini_ord = i;
@@ -941,7 +942,7 @@ vector<int> ai::output(const card_type& pr)
 			else if (two.empty() || two_ite != two.end())//对子还没匹配完或者没有要匹配的，那么单张一定已经匹配完了
 			{
 				if (chosen[i].repeat != 1//不能再找单张的牌了！
-					&& chosen[i].max < mini)
+					&& chosen[i].repeat != 4 && chosen[i].max < mini)//也不能出炸弹
 				{
 					mini = chosen[i].max;
 					mini_ord = i;
@@ -949,7 +950,8 @@ vector<int> ai::output(const card_type& pr)
 			}
 			else if (one.empty() || one_ite != one.end())//对子已经匹配完但单张还没匹配完或没有要匹配的
 			{
-				if (chosen[i].repeat != 2 && chosen[i].max < mini)
+				if (chosen[i].repeat != 4//不出炸弹
+					&& chosen[i].repeat != 2 && chosen[i].max < mini)
 				{
 					mini = chosen[i].max;
 					mini_ord = i;
@@ -959,7 +961,7 @@ vector<int> ai::output(const card_type& pr)
 			else//if (!one.empty() && one_ite == one.end() && !two.empty() && two_ite == two.end())
 			{
 				//不可能再有重数小于等于2的单牌未匹配了
-				if (chosen[i].repeat > 2 && chosen[i].max < mini)
+				if (chosen[i].repeat == 3 && chosen[i].max < mini)//只可能出三张
 				{
 					mini = chosen[i].max;
 					mini_ord = i;
@@ -1017,21 +1019,29 @@ vector<int> ai::output(const card_type& pr)
 			}
 			else//没有连牌出了，那么一定有单牌出
 			{
-				//这个时候mini的牌一定是合法的，并且是单牌里最小的
-				//下同Line 334-348
-				for (int i = 1; i <= chosen[mini_ord].repeat; i++)
-					res.push_back(mini);
-				if (chosen[mini_ord].carry > 0)//有三带
+				if (mini_ord < 100)
 				{
-					int j;
-					//找到所带牌型的最小牌
-					for (j = stop; j < chosen.size(); j++)
+					//这个时候mini的牌一定是合法的，并且是单牌里最小的
+					//下同Line 334-348
+					for (int i = 1; i <= chosen[mini_ord].repeat; i++)
+						res.push_back(mini);
+					if (chosen[mini_ord].carry > 0)//有三带
 					{
-						if (chosen[j].repeat == chosen[mini_ord].carry)
-							break;
+						int j;
+						//找到所带牌型的最小牌
+						for (j = stop; j < chosen.size(); j++)
+						{
+							if (chosen[j].repeat == chosen[mini_ord].carry)
+								break;
+						}
+						for (int k = 1; k <= chosen[j].repeat; k++)
+							res.push_back(chosen[j].max);
 					}
-					for (int k = 1; k <= chosen[j].repeat; k++)
-						res.push_back(chosen[j].max);
+				}
+				else//只剩炸弹了，那么炸弹在第一手牌
+				{
+					for (int i = 1; i <= 4; i++)
+						res.push_back(chosen[0].max);
 				}
 				return res;
 			}
@@ -1376,7 +1386,7 @@ void oneposs_spare::combine(const card_type& pre)
 		}
 	}
 }
-	/*======================================*/
+/*======================================*/
 /*===================输入接口===================*/
 card_type::card_type(const CardCombo& c)
 {
@@ -1491,7 +1501,7 @@ card_type::card_type(const CardCombo& c)
 		max = 14;
 	}
 }
-	/*======================================*/
+/*======================================*/
 /*===================输出接口===================*/
 vector<Card> turn(const vector<int>& out, const set<Card>& cards)
 {
@@ -1518,7 +1528,7 @@ vector<Card> turn(const vector<int>& out, const set<Card>& cards)
 	}
 	return res;
 }
-	/*======================================*/
+/*======================================*/
 
 
 
@@ -1649,7 +1659,7 @@ int main()
 
 	CardCombo myAction(output.begin(), output.end());//构建符合要求的输出的牌决策
 
-	// 是合法牌
+													 // 是合法牌
 	assert(myAction.comboType != CardComboType::INVALID);
 
 	assert(
