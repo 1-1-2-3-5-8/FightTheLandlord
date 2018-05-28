@@ -144,8 +144,16 @@ class ai
 {
 	card_in_hand hand_card;//手牌
 	vector<oneposs_spare> result;//拆牌结果
+	int myself;//自己是谁
+	int last;//上一手牌是谁出的
 public:
-	ai(const card_in_hand& _cd) :hand_card(_cd) {}
+	ai(const card_in_hand& _cd, int _m, int p_t) :hand_card(_cd), myself(_m)
+	{
+		if (p_t >= 2)
+			last = -1;
+		else
+			last = (myself + 2 - p_t) % 3;
+	}
 	void spare();//手牌拆牌
 	void dfs(int, const oneposs_spare&, const vector<int>&);//递归找连牌
 	void dfs_for_nonjoin(int, const oneposs_spare&, const vector<int>&);//拆单牌

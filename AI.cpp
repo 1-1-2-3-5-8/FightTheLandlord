@@ -275,7 +275,13 @@ void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>&
 	oneposs_spare res(now);
 	if (start >= 12)
 	{
-		res.out_time = res.met.size();
+		//把手数的定义改为小于小二的非炸弹牌手数
+		res.out_time = 0;
+		for (int i = 0; i < res.met.size(); i++)
+		{
+			if (res.met[i].max < 12 && res.met[i].repeat < 4)
+				res.out_time++;
+		}
 		result.push_back(res);
 	}
 	else
@@ -604,8 +610,15 @@ vector<int> ai::output(const out_card& pre)
 			}
 		}
 	}
-	else//接牌
+	else//接牌，那么last一定不小于0
 	{
+		if ((myself == 1 && last == 2) || myself == 2 && last == 1)
+			//如果自己是农民并且上一手牌由队友出
+		{
+			if ((pr.repeat == 4)//队友出炸弹或者四带或者（可能有带牌的）四重连牌
+				|| pr.max >= 11)//队友出不小于A的牌（或最大牌为A的连牌）
+				return res;//选择过牌
+		}
 		int mini = 100;
 		int method, hand;//第几种拆牌方案，以及该拆牌方案里的哪手牌
 		for (int i = 0; i < result.size(); i++)
@@ -625,30 +638,38 @@ vector<int> ai::output(const out_card& pre)
 						if (now.met[j].max <= 7)
 							val = -2;
 						else
-							val = -4;
+							val = -3;
 					}
 					else
 					{
 						if (now.met[j].max <= 7)
-							val = -8;
+							val = -6;
 						else
-							val = -10;
+							val = -8;
 					}
 					break;
 				}
 				else if (now.met[j].repeat == 4)//能炸，在满足下列条件之一时才考虑
 				{
-					if (pr.repeat == 4 && now.met[j].max > pr.max)//接炸弹
+					if (pr.repeat == 4 && pr.join == 1)//接的是炸弹
 					{
-						val = -4;//出炸弹的权值定为-4
-						break;
+						if (now.met[j].max > pr.max)
+						{
+							val = -4;//出炸弹的权值定为-4
+							break;
+						}
 					}
 					else if (pr.join > 1)//连牌也炸
 					{
 						val = -2;
 						break;
 					}
-					else if (now.out_time <= 2)//炸完再出一手牌就能出完
+					else if (pr.max >= 12)//大于小二的牌要炸
+					{
+						val = -2;
+						break;
+					}
+					else if (now.met.size() <= 2)//炸完再出一手牌就能出完
 					{
 						val = -15;
 						break;

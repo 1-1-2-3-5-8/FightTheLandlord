@@ -112,15 +112,42 @@ void play()
 		switch (cycle % 3)
 		{
 		case 0:
-			printf("Landlord's turn:");
+			printf("Landlord's turn:\n");
+
 			player_turn(lord);
+			/*{
+				printf("Landlord's output:");
+				ai AI(lord, 0, pass_time);
+				out = AI.output(pre);//传出AI出牌策略
+				if (out.size() == 4 && out[0] == 14)//出王炸需要额外转换
+				{
+					out.clear();
+					out.push_back(13);
+					out.push_back(14);
+				}
+				if (out.empty())
+					printf("Pass\n");
+				else
+				{
+					//输出AI出牌
+					for (int i = 0; i < out.size(); i++)
+						cout << turn_back(out[i]) << " ";
+					cout << endl;
+				}
+				int level = -1;//记录出的牌的等级（越高表示出的牌在同牌型里越大，非法牌型与过牌为-1）
+							   //将AI要出的牌从手牌中删除，然后将出牌放进出牌历史中，如果非过牌则更新pre
+				int type = valid_out(out, pre, lord, level);
+				history.push_back(new out_card(out, type, level));
+			}*/
+
 			break;
 		case 1:
 			printf("Farmer 1's turn:\n");
 			
-			{
+			player_turn(farmer1);
+			/*{
 				printf("Farmer 1's output:");
-				ai AI(farmer1);
+				ai AI(farmer1, 1, pass_time);
 				out = AI.output(pre);//传出AI出牌策略
 				if (out.size() == 4 && out[0] == 14)//出王炸需要额外转换
 				{
@@ -141,12 +168,38 @@ void play()
 				//将AI要出的牌从手牌中删除，然后将出牌放进出牌历史中，如果非过牌则更新pre
 				int type = valid_out(out, pre, farmer1, level);
 					history.push_back(new out_card(out, type, level));
-			}
+			}*/
 
 			break;
 		case 2:
-			printf("Farmer 2's turn:");
-			player_turn(farmer2);
+			printf("Farmer 2's turn:\n");
+			
+			//player_turn(farmer2);
+			{
+				printf("Farmer 2's output:");
+				ai AI(farmer2, 2, pass_time);
+				out = AI.output(pre);//传出AI出牌策略
+				if (out.size() == 4 && out[0] == 14)//出王炸需要额外转换
+				{
+					out.clear();
+					out.push_back(13);
+					out.push_back(14);
+				}
+				if (out.empty())
+					printf("Pass\n");
+				else
+				{
+					//输出AI出牌
+					for (int i = 0; i < out.size(); i++)
+						cout << turn_back(out[i]) << " ";
+					cout << endl;
+				}
+				int level = -1;//记录出的牌的等级（越高表示出的牌在同牌型里越大，非法牌型与过牌为-1）
+							   //将AI要出的牌从手牌中删除，然后将出牌放进出牌历史中，如果非过牌则更新pre
+				int type = valid_out(out, pre, farmer2, level);
+				history.push_back(new out_card(out, type, level));
+			}
+
 		}
 		if (out.empty())
 			pass_time++;

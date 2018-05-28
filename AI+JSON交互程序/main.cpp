@@ -545,9 +545,15 @@ class ai
 {
 	int card[15];//手牌
 	vector<oneposs_spare> result;//拆牌结果
+	int myself;//我是哪方
+	int last;//上一手牌的出牌方
 public:
-	ai(const set<Card>& cards)//把手牌传给AI
+	ai(const set<Card>& cards, int _m, int p_t) :myself(_m)//把手牌传给AI
 	{
+		if (p_t >= 2)
+			last = -1;
+		else
+			last = (myself + 2 - p_t) % 3;
 		memset(card, 0, sizeof(card));
 		for (set<Card>::iterator iter = cards.begin(); iter != cards.end(); iter++)
 		{
@@ -729,7 +735,13 @@ void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>&
 	oneposs_spare res(now);
 	if (start >= 12)
 	{
-		res.out_time = res.met.size();
+		//把手数的定义改为小于小二的非炸弹牌手数
+		res.out_time = 0;
+		for (int i = 0; i < res.met.size(); i++)
+		{
+			if (res.met[i].max < 12 && res.met[i].repeat < 4)
+				res.out_time++;
+		}
 		result.push_back(res);
 	}
 	else
@@ -1049,6 +1061,13 @@ vector<int> ai::output(const card_type& pr)
 	}
 	else//接牌
 	{
+		if ((myself == 1 && last == 2) || myself == 2 && last == 1)
+			//如果自己是农民并且上一手牌由队友出
+		{
+			if ((pr.repeat == 4)//队友出炸弹或者四带或者（可能有带牌的）四重连牌
+				|| pr.max >= 11)//队友出不小于A的牌（或最大牌为A的连牌）
+				return res;//选择过牌
+		}
 		int mini = 100;
 		int method, hand;//第几种拆牌方案，以及该拆牌方案里的哪手牌
 		for (int i = 0; i < result.size(); i++)
@@ -1068,30 +1087,38 @@ vector<int> ai::output(const card_type& pr)
 						if (now.met[j].max <= 7)
 							val = -2;
 						else
-							val = -4;
+							val = -3;
 					}
 					else
 					{
 						if (now.met[j].max <= 7)
-							val = -8;
+							val = -6;
 						else
-							val = -10;
+							val = -8;
 					}
 					break;
 				}
 				else if (now.met[j].repeat == 4)//能炸，在满足下列条件之一时才考虑
 				{
-					if (pr.repeat == 4 && now.met[j].max > pr.max)//接炸弹
+					if (pr.repeat == 4 && pr.join == 1)//接的是炸弹
 					{
-						val = -4;//出炸弹的权值定为-4
-						break;
+						if (now.met[j].max > pr.max)
+						{
+							val = -4;//出炸弹的权值定为-4
+							break;
+						}
 					}
 					else if (pr.join > 1)//连牌也炸
 					{
 						val = -2;
 						break;
 					}
-					else if (now.out_time <= 2)//炸完再出一手牌就能出完
+					else if (pr.max >= 12)//大于小二的牌要炸
+					{
+						val = -2;
+						break;
+					}
+					else if (now.met.size() <= 2)//炸完再出一手牌就能出完
 					{
 						val = -15;
 						break;
@@ -1550,6 +1577,8 @@ short cardRemaining[PLAYER_COUNT] = { 20, 17, 17 };
 // 我是几号玩家（0-地主，1-农民甲，2-农民乙）
 int myPosition;
 
+int p_t;//过牌数
+
 namespace BotzoneIO
 {
 	using namespace std;
@@ -1606,11 +1635,17 @@ namespace BotzoneIO
 				if (playerAction.size() == 0)
 					howManyPass++;
 				else
+				{
 					lastValidCombo = CardCombo(playedCards.begin(), playedCards.end());
+					howManyPass = 0;//归零
+				}
 			}
 
 			if (howManyPass == 2)
 				lastValidCombo = CardCombo();
+
+			//自己加的，记录过牌数
+			p_t = howManyPass;
 
 			if (i < turn - 1)
 			{
@@ -1652,7 +1687,7 @@ int main()
 
 	// 做出决策（你只需修改以下部分）
 
-	ai AI(myCards);//以手牌创建AI类对象
+	ai AI(myCards, myPosition, p_t);//以手牌创建AI类对象
 	card_type pre(lastValidCombo);//要大过的牌
 	vector<int> out = AI.output(pre);//作出出牌决策
 	vector<Card> output = turn(out, myCards);//转换为要求的形式
