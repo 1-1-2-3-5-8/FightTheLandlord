@@ -731,12 +731,12 @@ void oneposs_spare::combine(const card_type& pre)
 		{
 		case 1:
 			//只带小于A的牌
-			if (met[i].max < 11)
+			if (met[i].join == 1 && met[i].max < 11)
 				one++;
 			break;
 		case 2:
 			//同上
-			if (met[i].max < 11)
+			if (met[i].join == 1 && met[i].max < 11)
 				two++;
 			break;
 		case 3:
