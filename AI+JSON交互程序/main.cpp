@@ -547,6 +547,7 @@ class ai
 	vector<oneposs_spare> result;//拆牌结果
 	int myself;//我是哪方
 	int last;//上一手牌的出牌方
+	bool friend_out;//上一手牌是不是队友出的
 public:
 	ai(const set<Card>& cards, int _m, int p_t) :myself(_m)//把手牌传给AI
 	{
@@ -554,6 +555,10 @@ public:
 			last = -1;
 		else
 			last = (myself + 2 - p_t) % 3;
+		if ((myself == 1 && last == 2) || (myself == 2 && last == 1))
+			friend_out = 1;
+		else
+			friend_out = 0;
 		memset(card, 0, sizeof(card));
 		for (set<Card>::iterator iter = cards.begin(); iter != cards.end(); iter++)
 		{
@@ -1061,8 +1066,7 @@ vector<int> ai::output(const card_type& pr)
 	}
 	else//接牌
 	{
-		if ((myself == 1 && last == 2) || myself == 2 && last == 1)
-			//如果自己是农民并且上一手牌由队友出
+		if (friend_out)//如果自己是农民并且上一手牌由队友出，这一段可能可以省略
 		{
 			if ((pr.repeat == 4)//队友出炸弹或者四带或者（可能有带牌的）四重连牌
 				|| pr.max >= 11)//队友出不小于A的牌（或最大牌为A的连牌）
@@ -1098,30 +1102,34 @@ vector<int> ai::output(const card_type& pr)
 					}
 					break;
 				}
-				else if (now.met[j].repeat == 4)//能炸，在满足下列条件之一时才考虑
+				else if (now.met[j].repeat == 4)//能炸，在满足下列条件时才考虑
 				{
-					if (pr.repeat == 4 && pr.join == 1)//接的是炸弹
-					{
-						if (now.met[j].max > pr.max)
-						{
-							val = -4;//出炸弹的权值定为-4
-							break;
-						}
-					}
-					else if (pr.join > 1)//连牌也炸
-					{
-						val = -2;
-						break;
-					}
-					else if (pr.max >= 12)//大于小二的牌要炸
-					{
-						val = -2;
-						break;
-					}
-					else if (now.met.size() <= 2)//炸完再出一手牌就能出完
+					if (now.met.size() <= 2)//炸完再出一手牌就能出完
 					{
 						val = -15;
 						break;
+					}
+					else if (!friend_out)//如果炸完出不完那么只炸非队友的牌
+					{
+						if (pr.repeat == 4 && pr.join == 1)//接的是炸弹（不出自队友）
+						{
+							if (now.met[j].max > pr.max)
+							{
+								val = -4;//出炸弹的权值定为-4
+								break;
+							}
+						}
+						else if (pr.join > 1)//非队友的连牌也炸
+						{
+							val = -2;
+							break;
+						}
+						else if (pr.max >= 12)
+							//大于小二的牌要炸（这手牌一定不出自队友否则在一开始已经选择过牌）
+						{
+							val = -2;
+							break;
+						}
 					}
 				}
 			}

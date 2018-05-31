@@ -146,6 +146,7 @@ class ai
 	vector<oneposs_spare> result;//拆牌结果
 	int myself;//自己是谁
 	int last;//上一手牌是谁出的
+	bool friend_out;//上一手牌是不是队友出的
 public:
 	ai(const card_in_hand& _cd, int _m, int p_t) :hand_card(_cd), myself(_m)
 	{
@@ -153,6 +154,10 @@ public:
 			last = -1;
 		else
 			last = (myself + 2 - p_t) % 3;
+		if ((myself == 1 && last == 2) || (myself == 2 && last == 1))
+			friend_out = 1;
+		else
+			friend_out = 0;
 	}
 	void spare();//手牌拆牌
 	void dfs(int, const oneposs_spare&, const vector<int>&);//递归找连牌
