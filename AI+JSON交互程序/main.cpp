@@ -595,10 +595,10 @@ bool cmp_for_comb(const card_type& a, const card_type& b)
 			return 1;
 		if (a.repeat > b.repeat)
 			return 0;
-		//重数相等看连牌数从少到多
-		if (a.join < b.join)
-			return 1;
+		//重数相等看连牌数从多到少
 		if (a.join > b.join)
+			return 1;
+		if (a.join < b.join)
 			return 0;
 		//连牌数相等按牌的等级（最大牌编号）从小到大
 		return a.max < b.max;
@@ -740,11 +740,12 @@ void ai::dfs_for_nonjoin(int start, const oneposs_spare& now, const vector<int>&
 	oneposs_spare res(now);
 	if (start >= 12)
 	{
-		//把手数的定义改为小于小二的非炸弹牌手数
+		//把手数的定义改为小于小二的非炸弹非飞机牌手数
 		res.out_time = 0;
 		for (int i = 0; i < res.met.size(); i++)
 		{
-			if (res.met[i].max < 12 && res.met[i].repeat < 4)
+			if ((res.met[i].max < 12 && res.met[i].repeat < 4)//小于小二且非炸弹
+				&& !(res.met[i].join > 1 && res.met[i].repeat == 3))//飞机也不考虑进手数
 				res.out_time++;
 		}
 		result.push_back(res);
@@ -866,6 +867,7 @@ void ai::dfs(int start, const oneposs_spare& now, const vector<int>& remain)
 vector<int> ai::output(const card_type& pr)
 {
 	vector<int> res;
+	set<int> carry_card;//要带的牌有哪些，防止重复
 	spare();
 	int i;
 	for (i = 0; i < result.size(); i++)
@@ -899,8 +901,14 @@ vector<int> ai::output(const card_type& pr)
 					}
 					for (int k = 1; k <= chosen[i].join; k++)
 					{
-						for (int l = 1; l <= chosen[i].carry; l++)
-							res.push_back(chosen[j].max);//将带牌压入vector数组
+						if (carry_card.count(chosen[j].max) == 0)//如果在带牌集中还没出现过的话
+						{
+							for (int l = 1; l <= chosen[i].carry; l++)
+								res.push_back(chosen[j].max);//将带牌压入vector数组
+							carry_card.insert(chosen[j].max);
+						}//就可以选择带牌
+						else//不能算带牌，重新寻找这一手带牌
+							k--;
 						j++;
 					}
 				}
@@ -990,6 +998,7 @@ vector<int> ai::output(const card_type& pr)
 		{
 			for (int i = 1; i <= chosen[mini_ord].repeat; i++)
 				res.push_back(mini);
+			//这是单副的三先，只带一手牌，不可能带重所以不用carry_card检查
 			if (chosen[mini_ord].carry > 0)//有三带
 			{
 				int j;
@@ -1027,8 +1036,14 @@ vector<int> ai::output(const card_type& pr)
 					}
 					for (int k = 1; k <= chosen[0].join; k++)
 					{
-						for (int l = 1; l <= chosen[0].carry; l++)
-							res.push_back(chosen[j].max);//将带牌压入vector数组
+						if (carry_card.count(chosen[j].max) == 0)
+						{
+							for (int l = 1; l <= chosen[0].carry; l++)
+								res.push_back(chosen[j].max);//将带牌压入vector数组
+							carry_card.insert(chosen[j].max);
+						}
+						else//不能算带牌，重新寻找这一手带牌
+							k--;
 						j++;
 					}
 				}
@@ -1042,7 +1057,7 @@ vector<int> ai::output(const card_type& pr)
 					//下同Line 334-348
 					for (int i = 1; i <= chosen[mini_ord].repeat; i++)
 						res.push_back(mini);
-					if (chosen[mini_ord].carry > 0)//有三带
+					if (chosen[mini_ord].carry > 0)//有三带，单手不用carry_card检查
 					{
 						int j;
 						//找到所带牌型的最小牌
@@ -1064,7 +1079,7 @@ vector<int> ai::output(const card_type& pr)
 			}
 		}
 	}
-	else//接牌
+	else//接牌，那么last一定不小于0
 	{
 		if (friend_out)//如果自己是农民并且上一手牌由队友出，这一段可能可以省略
 		{
@@ -1090,6 +1105,8 @@ vector<int> ai::output(const card_type& pr)
 					{
 						if (now.met[j].max <= 7)
 							val = -2;
+						else if (friend_out&&now.met[j].max > 10)
+							val = 0;//见下，如果必须要用大于K的非连牌接队友的话就选择过牌
 						else
 							val = -3;
 					}
@@ -1137,7 +1154,10 @@ vector<int> ai::output(const card_type& pr)
 			{
 				mini = now.out_time + val;
 				method = i;
-				hand = j;
+				if (val < 0)
+					hand = j;
+				else
+					hand = now.met.size();
 			}
 		}
 		vector<card_type>& chosen = result[method].met;
@@ -1166,8 +1186,14 @@ vector<int> ai::output(const card_type& pr)
 				}
 				for (int k = 1; k <= chosen_card.join; k++)
 				{
-					for (int l = 1; l <= chosen_card.carry; l++)
-						res.push_back(chosen[j].max);
+					if (carry_card.count(chosen[j].max) == 0)
+					{
+						for (int l = 1; l <= chosen_card.carry; l++)
+							res.push_back(chosen[j].max);
+						carry_card.insert(chosen[j].max);
+					}
+					else
+						k--;
 					j++;
 				}
 			}
@@ -1179,13 +1205,19 @@ vector<int> ai::output(const card_type& pr)
 
 /*===================决策的主要修改部分--end===================*/
 
+bool mygreater(const int a, const int b)
+{
+	return a > b;
+}
 
 void oneposs_spare::combine(const card_type& pre)
 {
 	sort(met.begin(), met.end(), cmp_for_comb);//先排序，用组三带时排序的比大小函数
 	vector<card_type*> three, plane;
 	int one = 0, two = 0;
-	//找到所有三个以及飞机，同时统计出单张和对子数
+	int onecnt[11] = {};//单张牌分别哪些
+	int diffone = 0;//单张牌有几种
+					//找到所有三个以及飞机，同时统计出单张和对子数
 	for (int i = 0; i < met.size(); i++)
 	{
 		switch (met[i].repeat)
@@ -1193,12 +1225,17 @@ void oneposs_spare::combine(const card_type& pre)
 		case 1:
 			//只带小于A的牌
 			if (met[i].join == 1 && met[i].max < 11)
+			{
 				one++;
+				if (onecnt[met[i].max] == 0)
+					diffone++;
+				onecnt[met[i].max]++;
+			}
 			break;
 		case 2:
-			//同上
+			//同上只带小于A的牌
 			if (met[i].join == 1 && met[i].max < 11)
-				two++;
+				two++;//因为不拆小二以下的炸弹，所以对子牌不可能出现重复
 			break;
 		case 3:
 			if (met[i].join > 1)
@@ -1217,6 +1254,9 @@ void oneposs_spare::combine(const card_type& pre)
 				if (met[i].repeat == 1 && met[i].join == 1 && met[i].max > pre.max
 					&&met[i].max < 11)//用小于A的牌能接，那么将它从单张的候选牌中剔除出去
 				{
+					onecnt[met[i].max]--;//这种单张牌数减一
+					if (onecnt[met[i].max] == 0)
+						diffone--;//如果正好选完了那么单张牌种数就少一
 					one--;//单张候选牌种数减1
 						  //因为带牌总是从小开始选，所以只要相应种类牌数量充足就不会和接牌冲突
 					break;
@@ -1236,14 +1276,16 @@ void oneposs_spare::combine(const card_type& pre)
 				}
 			}
 		}
-		//然后先让飞机匹配单张或对子
+		sort(onecnt, onecnt + 11, mygreater);//匹配时单张的大小就无关紧要了，因此从多到少排序
+												  //然后先让飞机匹配单张或对子
 		for (int i = 0; i < plane.size(); i++)
 		{
-			if (plane[i]->join > one)
+			if (plane[i]->join > diffone)//能否匹配单张要看和单张种类数而不是单张数的大小（因为单张可能重复）
 			{
+				//不能匹配单张看能不能匹配对子
 				if (plane[i]->join > two)//飞机数比单张和对子数都多，没法带
-					break;
-				//可以带对子
+					continue;//飞机连数从大到小因此还要继续考虑下一组飞机
+							 //可以带对子
 				else
 				{
 					out_time -= plane[i]->join;//带出这么多手牌，手数要减相应值
@@ -1254,12 +1296,19 @@ void oneposs_spare::combine(const card_type& pre)
 			//可以带单张时直接带单张
 			else
 			{
-				out_time -= plane[i]->join;
+				const int& num = plane[i]->join;
+				for (int i = 0; i < num; i++)
+				{
+					onecnt[i]--;
+					if (onecnt[i] == 0)
+						diffone--;//更改单张种类数
+				}
+				out_time -= num;
 				plane[i]->carry = 1;
-				one -= plane[i]->join;
+				one -= num;
 			}
 		}
-		//然后考虑三带
+		//然后考虑三带，三带只带一种牌因此不用考虑重复
 		for (int i = 0; i < three.size(); i++)
 		{
 			//能带单张时就带单张
@@ -1280,7 +1329,8 @@ void oneposs_spare::combine(const card_type& pre)
 	}
 	else//要接的牌是三张或三带，暂时考虑按照优先接牌的原则组三带
 	{
-		if (pre.carry == 1 && one >= pre.join)
+		sort(onecnt, onecnt + 11, mygreater);//带牌不用考虑大小所以可以直接从多到少排序
+		if (pre.carry == 1 && diffone >= pre.join)//同样地要和单张种数而不是单张数比较
 		{
 			if (pre.join == 1)
 			{
@@ -1303,10 +1353,17 @@ void oneposs_spare::combine(const card_type& pre)
 				{
 					if (plane[i]->join == pre.join&&plane[i]->max > pre.max)
 					{
+						const int& num = pre.join;
 						chosen = plane[i];//带标记
 						plane[i]->carry = 1;
-						one -= pre.join;
-						out_time -= pre.join;
+						for (int i = 0; i < num; i++)
+						{
+							onecnt[i]--;
+							if (onecnt[i] == 0)
+								diffone--;//更改单张种类数
+						}
+						one -= num;
+						out_time -= num;
 						break;
 					}
 				}
@@ -1377,10 +1434,10 @@ void oneposs_spare::combine(const card_type& pre)
 			if (plane[i] == chosen)
 				continue;
 			//下同Line 309-330
-			if (plane[i]->join > one)
+			if (plane[i]->join > diffone)
 			{
 				if (plane[i]->join > two)//飞机数比单张和对子数都多，没法带
-					break;
+					continue;
 				//可以带对子
 				else
 				{
@@ -1392,12 +1449,19 @@ void oneposs_spare::combine(const card_type& pre)
 			//可以带单张时直接带单张
 			else
 			{
-				out_time -= plane[i]->join;
+				const int& num = plane[i]->join;
+				for (int i = 0; i < num; i++)
+				{
+					onecnt[i]--;
+					if (onecnt[i] == 0)
+						diffone--;//更改单张种类数
+				}
+				out_time -= num;
 				plane[i]->carry = 1;
-				one -= plane[i]->join;
+				one -= num;
 			}
 		}
-		//然后考虑三带
+		//然后考虑三带，三带只带一种牌所以不用考虑重复
 		for (int i = 0; i < three.size(); i++)
 		{
 			//要用来接牌的牌之前已经考虑过了，跳过

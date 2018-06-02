@@ -101,7 +101,7 @@ void player_turn(card_in_hand& player)
 	}
 }
 
-void play()
+bool play()
 {
 	int cycle = 0;
 	int pass_time = 0;
@@ -114,8 +114,8 @@ void play()
 		case 0:
 			printf("Landlord's turn:\n");
 
-			player_turn(lord);
-			/*{
+		//player_turn(lord);
+		{
 				printf("Landlord's output:");
 				ai AI(lord, 0, pass_time);
 				out = AI.output(pre);//传出AI出牌策略
@@ -137,15 +137,17 @@ void play()
 				int level = -1;//记录出的牌的等级（越高表示出的牌在同牌型里越大，非法牌型与过牌为-1）
 							   //将AI要出的牌从手牌中删除，然后将出牌放进出牌历史中，如果非过牌则更新pre
 				int type = valid_out(out, pre, lord, level);
+				if (level < 0 && !out.empty())
+					return 0;
 				history.push_back(new out_card(out, type, level));
-			}*/
+			}
 
 			break;
 		case 1:
 			printf("Farmer 1's turn:\n");
 			
-			player_turn(farmer1);
-			/*{
+			//player_turn(farmer1);
+			{
 				printf("Farmer 1's output:");
 				ai AI(farmer1, 1, pass_time);
 				out = AI.output(pre);//传出AI出牌策略
@@ -167,8 +169,10 @@ void play()
 				int level = -1;//记录出的牌的等级（越高表示出的牌在同牌型里越大，非法牌型与过牌为-1）
 				//将AI要出的牌从手牌中删除，然后将出牌放进出牌历史中，如果非过牌则更新pre
 				int type = valid_out(out, pre, farmer1, level);
-					history.push_back(new out_card(out, type, level));
-			}*/
+				if (level < 0 && !out.empty())
+					return 0;
+				history.push_back(new out_card(out, type, level));
+			}
 
 			break;
 		case 2:
@@ -197,6 +201,8 @@ void play()
 				int level = -1;//记录出的牌的等级（越高表示出的牌在同牌型里越大，非法牌型与过牌为-1）
 							   //将AI要出的牌从手牌中删除，然后将出牌放进出牌历史中，如果非过牌则更新pre
 				int type = valid_out(out, pre, farmer2, level);
+				if (level < 0 && !out.empty())
+					return 0;
 				history.push_back(new out_card(out, type, level));
 			}
 
@@ -212,6 +218,7 @@ void play()
 		printf("Lord Win!\n");
 	else
 		printf("Farmers Win!\n");
+	return 1;
 }
 
 int main()
@@ -225,6 +232,8 @@ int main()
 	else
 		printf("You are farmer %d\n", player);
 	cin.ignore(10, '\n');//过滤换行符
-	play();
+	bool game_end = play();
+	if (!game_end)//因为AI非法出牌而结束的游戏
+		printf("There's something wrong!");
 	return 0;
 }
