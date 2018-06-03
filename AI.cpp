@@ -369,6 +369,18 @@ void ai::dfs(int start, const oneposs_spare& now, const vector<int>& remain)
 					res.met.pop_back();
 					for (k = i; k < i + j; k++)
 						rem[k] += 2;
+					//把多于五对的对子拆成两副顺子
+					if (j >= 5)
+					{
+						for (k = i; k < i + j; k++)
+							rem[k]--;
+						res.met.push_back(card_type(1, k - 1, j, 0));
+						dfs(i, res, rem);
+						//回溯
+						res.met.pop_back();
+						for (k = i; k < i + j; k++)
+							rem[k]++;
+					}
 				}
 				break;
 			}
